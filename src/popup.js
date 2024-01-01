@@ -31,7 +31,10 @@ function getTabGroupsByQuery(query) {
 };
 
 function focusToTab(windowId, tabId, callback) {
-  chrome.tabs.update(tabId, { active: true });
+  if (tabId) {
+    chrome.tabs.update(tabId, { active: true });
+  }
+
   chrome.windows.update(windowId, { focused: true });
   if (callback){
     callback();
@@ -85,14 +88,16 @@ function handleEnterKeyPress() {
       var windowId = parseInt(selectedSuggestion.dataset.windowId);
       var tabId = parseInt(selectedSuggestion.dataset.tabId);
       console.log(`Focusing to tab: ${selectedValue}`);
-      focusToTab(windowId, tabId);
+
+      // Note: Don't pass tabId for now. It gives ID missing error sometimes.
+      focusToTab(windowId, null);
     }
   }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
   chrome.tabGroups.query({},  function (groups) {
-    allTabGroups = groups;
+    allTabGroups = groups.sort((a, b) => a.title.localeCompare(b.title));
     updateAutocompleteOptions(allTabGroups);
     suggestionsList = document.getElementById('suggestions');
     suggestionsList.style.display = 'block';
