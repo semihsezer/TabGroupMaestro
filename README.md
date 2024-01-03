@@ -1,14 +1,29 @@
 # TabGroupSearch
-Chrome Extension for searching and jumping to tab groups.
 
-## Getting Started
+This template should help get you started developing with Vue 3 in Vite.
 
-### Setup
+## Recommended IDE Setup
 
-1. `npm run install`
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
 
-### Starting the Server
+## Customize configuration
 
-1. Use `npm run watch` to run the server. This ensures that every change creates a new build in the `dist` folder, which is the folder that the Chrome Extension is pointed to.
+See [Vite Configuration Reference](https://vitejs.dev/config/).
 
-2. Go to Chrome Extensions. Do `load upnpacked` to load the extension from `frontend/dist` folder in this repository.
+## Project Setup
+
+```sh
+npm install
+```
+
+### Compile and Hot-Reload for Development
+
+```sh
+npm run dev
+```
+
+### Compile and Minify for Production
+
+```sh
+npm run build
+```
