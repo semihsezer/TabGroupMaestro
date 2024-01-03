@@ -1,29 +1,23 @@
-# TabGroupSearch
+# TabGroupSearch Chrome Extensions
 
-This template should help get you started developing with Vue 3 in Vite.
+Quickly search and find your Chrome tab groups.
 
-## Recommended IDE Setup
+## Getting Started
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+### Initial Setup
 
-## Customize configuration
+This project uses `Vue3` with `PrimeVue` component library and `Vite`.
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+1. `npm install`
 
-## Project Setup
+2. `npm run build`
 
-```sh
-npm install
-```
+3. Go to [chrome://extensions](chrome://extensions), enable developer mode, and add the extension by clicking load unpacked. Choose `./dist` folder for the directory of the extension.
 
-### Compile and Hot-Reload for Development
+4. Click the extension to make sure it is running.
 
-```sh
-npm run dev
-```
+### Development
 
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
+1. Run the code with `npm run watch` for hot reload/refresh.
+- Every time you make a change and save, the changes will be reflected as soon as you relaunch the chrome extension. No need to explicitly reload the extension.
+- See `package.json` for more details on how this is configured.
