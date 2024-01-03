@@ -1,0 +1,11 @@
+body {
+  font-family: var('--font-family');
+  color: var('--text-color');
+  width: 13rem;
+  height: 50rem;
+}
+
+.autofocusPanel {
+  min-height: 90%;
+  width: "100%";
+}
