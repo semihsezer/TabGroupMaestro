@@ -1,6 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Tab Group Search Chrome Extension 2",
+  "name": "Tab Group Search",
+  "description": "Quickly search and find your Chrome tab groups.",
   "version": "1.0",
   "icons": {
     "16": "assets/images/icon-16.png",
@@ -21,6 +22,6 @@
         }
     }
   },
-  "host_permissions": ["https://developer.chrome.com/*"],
+  "host_permissions": [],
   "permissions": ["tabGroups"]
 }
