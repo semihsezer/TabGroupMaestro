@@ -7,7 +7,7 @@
 
   <main>
     <div class="card flex justify-content-center">
-        <AutoComplete v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" />
+        <AutoComplete id="myAutoComplete" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" placeholder="Search Tab Groups..." completeOnFocus="true" delay="100" panelClass="autofocusPanel" style="width: 100%"/>
     </div>
   </main>
 </template>
@@ -51,6 +51,8 @@ export default {
       chrome.tabGroups.query({},  function (groups) {
         this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
         console.log(this.allItems);
+        this.items = this.allItems;
+        myAutoComplete.firstElementChild.focus();
       });
     },
     watch: {
