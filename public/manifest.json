@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Tab Group Search",
   "description": "Quickly search and find your Chrome tab groups.",
-  "version": "1.0",
+  "version": "1.0.0",
   "icons": {
     "16": "assets/images/icon-16.png",
     "32": "assets/images/icon-32.png",
