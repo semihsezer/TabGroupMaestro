@@ -15,6 +15,10 @@
 <script>
 
 import { ref } from "vue";
+import FuzzySearch from 'fuzzy-search';
+
+var searcher = null;
+
 const autoCompleteElement = ref();
 
 function focusToTab(windowId, tabId, callback) {
@@ -43,6 +47,8 @@ export default {
               const itemLower = item.title.toLowerCase();
               return itemLower.startsWith(queryLower) || itemLower.includes(queryLower);
             });
+
+            this.items = searcher.search(event.query);
         },
         handleUpdate() {
           var windowId = this.selectedValue.windowId;
@@ -53,6 +59,9 @@ export default {
       chrome.tabGroups.query({},  function (groups) {
         this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
         this.items = this.allItems;
+        searcher = new FuzzySearch(this.allItems, ['title'], {
+          sort: true
+        });
       });
       this.$refs.autoCompleteElement.onEscapeKey = function(){
         this.$refs.focusInput.blur();
