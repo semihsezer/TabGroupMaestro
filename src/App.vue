@@ -56,7 +56,6 @@ export default {
     mounted() {
       chrome.tabGroups.query({},  function (groups) {
         this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
-        console.log(this.allItems);
         this.items = this.allItems;
       });
       this.$nextTick(() => {
