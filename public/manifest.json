@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Tab Group Search",
+  "name": "Tab Group Maestro",
   "description": "Quickly search and find your Chrome tab groups.",
   "version": "1.0.0",
   "icons": {
@@ -20,6 +20,10 @@
             "chromeos": "Ctrl+Shift+2",
             "linux": "Ctrl+Shift+2"
         }
+    },
+    "add-to-tab-group": {
+      "suggested_key": "Ctrl+Shift+1",
+      "description": "Add current tab to tab group"
     }
   },
   "host_permissions": [],

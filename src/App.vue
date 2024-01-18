@@ -7,7 +7,7 @@
 
   <main>
     <div class="card flex justify-content-center">
-        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" placeholder="Search Tab Groups..." completeOnFocus="true" delay="100" panelClass="autofocusPanel" style="width: 100%" />
+        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" style="width: 100%" />
     </div>
   </main>
 </template>
@@ -20,6 +20,16 @@ import FuzzySearch from 'fuzzy-search';
 var searcher = null;
 
 const autoCompleteElement = ref();
+
+const MODES = {
+  search: "groupSearch",
+  group: "group"
+}
+
+const PLACEHOLDERS = {
+  search: "Search Tab Groups...",
+  group: "Add Tab to Group: Type Group Name"
+}
 
 function focusToTab(windowId, tabId, callback) {
   if (tabId) {
@@ -37,7 +47,9 @@ export default {
         return {
             selectedValue: '',
             items: [],
-            allItems: []
+            allItems: [],
+            placeholderValue: PLACEHOLDERS.search,
+            mode: "search"
         };
     },
     methods: {
@@ -49,28 +61,82 @@ export default {
             });
 
             this.items = searcher.search(event.query);
+
+            if (this.mode == MODES.group){
+              var itemExists = false;
+              this.items.forEach(function(item){
+                if (item.title.toLowerCase() == queryLower){
+                  itemExists = true;
+                }
+              });
+              if (itemExists === false){
+                let firstItem = {title: `New Group: ${queryLower}`, type: "new_group", group_name: queryLower};
+                this.items.unshift(firstItem);
+              }
+            };
         },
         handleUpdate() {
-          var windowId = this.selectedValue.windowId;
-          focusToTab(windowId, null);
+          var that = this;
+          if (this.mode == MODES.group){
+            // new group
+            if (this.selectedValue.type && this.selectedValue.type == "new_group"){
+              let groupTitle = this.selectedValue.group_name;
+              chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
+                let currentTabId = tabs[0].id;
+                chrome.tabs.group({tabIds: [currentTabId]}, function(groupId) {
+                  chrome.tabGroups.update(groupId, {title: groupTitle});
+                });
+              });
+            } else {
+              // existing group
+              let groupId = this.selectedValue.id;
+              chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
+                let currentTabId = tabs[0].id;
+                chrome.tabs.group({groupId: groupId, tabIds: [currentTabId]});
+              });
+            }
+          } else {
+            var windowId = this.selectedValue.windowId;
+            focusToTab(windowId, null);
+          }
         }
     },
     mounted() {
       chrome.tabGroups.query({},  function (groups) {
         this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
         this.items = this.allItems;
-        searcher = new FuzzySearch(this.allItems, ['title'], {
-          sort: true
-        });
+        searcher = new FuzzySearch(this.allItems, ['title'], {sort: true});
       });
+      var that = this;
       this.$refs.autoCompleteElement.onEscapeKey = function(){
-        this.$refs.focusInput.blur();
+        if (that.mode == MODES.group){
+          that.mode = MODES.search;
+          that.placeholderValue = PLACEHOLDERS.search;
+          if (that.items && that.items.length > 0 && that.items[0].type == "new_group"){
+            that.items.shift();
+          }
+          event.preventDefault();
+        } else {
+          this.$refs.focusInput.blur();
+        }
       }
       this.$nextTick(() => {
         this.$refs.autoCompleteElement.$refs.focusInput.focus();
       });
+
+      chrome.commands.onCommand.addListener((command) => {
+        if (this.mode == MODES.group){
+          this.placeholderValue = PLACEHOLDERS.search;
+          this.mode = MODES.search;
+        } else {
+          this.placeholderValue = PLACEHOLDERS.group;
+          this.mode = MODES.group;
+        }
+
+      });
     }
 };
+
 </script>
 
 <style scoped>
