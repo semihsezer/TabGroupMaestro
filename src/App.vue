@@ -54,7 +54,8 @@ export default {
     },
     methods: {
         search(event) {
-            const queryLower = event.query.toLowerCase();
+            const query = event.query;
+            const queryLower = query.toLowerCase();
             this.items = allItems.filter(function(item) {
               const itemLower = item.title.toLowerCase();
               return itemLower.startsWith(queryLower) || itemLower.includes(queryLower);
@@ -70,7 +71,7 @@ export default {
                 }
               });
               if (itemExists === false){
-                let firstItem = {title: `New Group: ${queryLower}`, type: "new_group", group_name: queryLower};
+                let firstItem = {title: `New Group: ${query}`, type: "new_group", group_name: query};
                 this.items.unshift(firstItem);
               }
             };
@@ -107,17 +108,26 @@ export default {
         this.items = this.allItems;
         searcher = new FuzzySearch(this.allItems, ['title'], {sort: true});
       });
+
       var that = this;
       this.$refs.autoCompleteElement.onEscapeKey = function(){
         if (that.mode == MODES.group){
+          that.selectedValue = "";
           that.mode = MODES.search;
           that.placeholderValue = PLACEHOLDERS.search;
           if (that.items && that.items.length > 0 && that.items[0].type == "new_group"){
             that.items.shift();
           }
+          that.items = allItems;
           event.preventDefault();
         } else {
-          this.$refs.focusInput.blur();
+          if (that.selectedValue){
+            that.selectedValue = "";
+            that.items = allItems;
+            event.preventDefault();
+          } else {
+            this.$refs.focusInput.blur();
+          }
         }
       }
       this.$nextTick(() => {
