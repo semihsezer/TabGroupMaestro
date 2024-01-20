@@ -7,7 +7,7 @@
 
   <main>
     <div class="card flex justify-content-center">
-        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" @clear="onClear" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" style="width: 100%"/>
+        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" @clear="onClear" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" inputClass="autofocusInput"/>
     </div>
   </main>
 </template>
@@ -26,9 +26,10 @@ const MODES = {
   group: "group"
 }
 
-const PLACEHOLDERS = {
-  search: "Search Tab Groups...",
-  group: "Add Tab to Group: Type Group Name"
+const CONST = {
+  search_placeholder: "Go to Tab Group...",
+  group_placeholder: "Add Current Tab to Group...",
+  add_to_group_prefix: "New Group: "
 }
 
 function focusToTab(windowId, tabId, callback) {
@@ -48,7 +49,7 @@ export default {
             selectedValue: '',
             items: [],
             allItems: [],
-            placeholderValue: PLACEHOLDERS.search,
+            placeholderValue: CONST.search_placeholder,
             mode: "search"
         };
     },
@@ -77,7 +78,7 @@ export default {
                 }
               });
               if (itemExists === false){
-                let firstItem = {title: `New Group: ${query}`, type: "new_group", group_name: query};
+                let firstItem = {title: `${CONST.add_to_group_prefix}${query}`, type: "new_group", group_name: query};
                 this.items.unshift(firstItem);
               }
             };
@@ -136,7 +137,7 @@ export default {
         if (that.mode == MODES.group){
           that.selectedValue = "";
           that.mode = MODES.search;
-          that.placeholderValue = PLACEHOLDERS.search;
+          that.placeholderValue = CONST.search_placeholder;
           if (that.items && that.items.length > 0 && that.items[0].type == "new_group"){
             that.items.shift();
           }
@@ -157,14 +158,15 @@ export default {
       });
 
       chrome.commands.onCommand.addListener((command) => {
-        if (this.mode == MODES.group){
-          this.placeholderValue = PLACEHOLDERS.search;
-          this.mode = MODES.search;
-        } else {
-          this.placeholderValue = PLACEHOLDERS.group;
-          this.mode = MODES.group;
-        }
-
+        setTimeout(() => {
+          if (this.mode == MODES.group){
+            this.placeholderValue = CONST.search_placeholder;
+            this.mode = MODES.search;
+          } else {
+            this.placeholderValue = CONST.group_placeholder;
+            this.mode = MODES.group;
+          }
+        }, 100);
       });
     }
 };
