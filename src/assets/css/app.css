@@ -1,11 +1,15 @@
 body {
   font-family: var('--font-family');
   color: var('--text-color');
-  width: 13rem;
+  width: 15rem;
   height: 50rem;
 }
 
 .autofocusPanel {
   min-height: 90%;
-  width: "100%";
+  width: 15rem;
+}
+
+.autofocusInput {
+  width: 15rem;
 }
