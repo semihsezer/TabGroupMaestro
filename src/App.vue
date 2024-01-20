@@ -7,7 +7,7 @@
 
   <main>
     <div class="card flex justify-content-center">
-        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" style="width: 100%" />
+        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" @clear="onClear" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" style="width: 100%"/>
     </div>
   </main>
 </template>
@@ -56,6 +56,12 @@ export default {
         search(event) {
             const query = event.query;
             const queryLower = query.toLowerCase();
+
+            if (queryLower == ""){
+              this.items = allItems;
+              return;
+            }
+
             this.items = allItems.filter(function(item) {
               const itemLower = item.title.toLowerCase();
               return itemLower.startsWith(queryLower) || itemLower.includes(queryLower);
@@ -76,6 +82,12 @@ export default {
               }
             };
         },
+        onClear(event){
+          setTimeout(() => {
+            this.items = allItems;
+            this.$refs.autoCompleteElement.show();
+          });
+        },
         handleUpdate() {
           var that = this;
           if (this.mode == MODES.group){
@@ -85,15 +97,25 @@ export default {
               chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
                 let currentTabId = tabs[0].id;
                 chrome.tabs.group({tabIds: [currentTabId]}, function(groupId) {
-                  chrome.tabGroups.update(groupId, {title: groupTitle});
+                  chrome.tabGroups.update(groupId, {title: groupTitle}, function(){
+                      chrome.tabGroups.get(groupId, function(group){
+                        focusToTab(group.windowId, null);
+                      });
+                    });
+                  });
                 });
-              });
             } else {
               // existing group
               let groupId = this.selectedValue.id;
+              let windowId = this.selectedValue.windowId;
               chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
                 let currentTabId = tabs[0].id;
-                chrome.tabs.group({groupId: groupId, tabIds: [currentTabId]});
+                chrome.runtime.sendMessage({
+                  message: 'add_tab_to_group_and_focus',
+                  windowId: windowId,
+                  tabId: currentTabId,
+                  groupId: groupId
+                });
               });
             }
           } else {

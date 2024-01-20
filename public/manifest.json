@@ -12,6 +12,9 @@
   "action": {
     "default_popup": "index.html"
   },
+  "background": {
+      "service_worker": "background/service-worker.js"
+  },
   "commands": {
     "_execute_action": {
         "suggested_key": {
