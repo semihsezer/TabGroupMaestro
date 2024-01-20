@@ -1,6 +1,13 @@
-# TabGroupSearch Chrome Extensions
+# Tab Group Maestro
 
-Quickly search and find your Chrome tab groups.
+A Chrome Extension to quickly search and find your native Chrome tab groups.
+
+<b>Features</b>:
+
+- (Ctrl + Shift + 2) Launch the extension to search and find native Chrome Tab Groups with autocomplete
+- (Ctrl + Shift + 1) Add current tab to tab group. Type tab group name to choose existing or create new tab group
+
+[Download Extension from Chrome Web Store](https://chromewebstore.google.com/detail/tab-group-maestro/flbgfjckllcjpcnmanlfbaachmpgapom)
 
 ## Getting Started
 
