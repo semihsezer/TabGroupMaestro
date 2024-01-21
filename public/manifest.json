@@ -25,7 +25,12 @@
         }
     },
     "add-to-tab-group": {
-      "suggested_key": "Ctrl+Shift+1",
+      "suggested_key": {
+            "windows": "Ctrl+Shift+1",
+            "mac": "Command+Shift+1",
+            "chromeos": "Ctrl+Shift+1",
+            "linux": "Ctrl+Shift+1"
+        },
       "description": "Add current tab to tab group"
     }
   },
