@@ -34,12 +34,19 @@ const CONST = {
 
 function focusToTab(windowId, tabId, callback) {
   if (tabId) {
-    chrome.tabs.update(tabId, { active: true });
-  }
-
-  chrome.windows.update(windowId, { focused: true });
-  if (callback){
-    callback();
+    chrome.tabs.update(tabId, {active: false }, function() {
+      chrome.tabs.update(tabId, {active: true }, function() {
+        chrome.windows.update(windowId, { focused: true });
+        if (callback){
+          callback();
+        }
+      });
+    });
+  } else {
+    chrome.windows.update(windowId, { focused: true });
+    if (callback) {
+      callback();
+    }
   }
 };
 
@@ -100,7 +107,7 @@ export default {
                 chrome.tabs.group({tabIds: [currentTabId]}, function(groupId) {
                   chrome.tabGroups.update(groupId, {title: groupTitle}, function(){
                       chrome.tabGroups.get(groupId, function(group){
-                        focusToTab(group.windowId, null);
+                        focusToTab(group.windowId, currentTabId);
                       });
                     });
                   });
@@ -115,22 +122,70 @@ export default {
                   message: 'add_tab_to_group_and_focus',
                   windowId: windowId,
                   tabId: currentTabId,
-                  groupId: groupId
+                  groupId: groupId,
                 });
               });
             }
           } else {
             var windowId = this.selectedValue.windowId;
-            focusToTab(windowId, null);
+            var tabId = this.selectedValue.lastAccessedTabId;
+            focusToTab(windowId, tabId);
           }
-        }
+        },
+        getSortedTabGroups() {
+          chrome.tabs.query({}, function (tabs) {
+            let tabGroups = {}; // tabGroupId: {id: id, lastAccessed: ts, tabs: []}
+            // Group tabs by tab group and construct lastAccessed
+            tabs.forEach(function (tab) {
+              if (tab.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
+                let tabLastAccessed = tab.lastAccessed ? tab.lastAccessed : -1;
+                if (tabGroups[tab.groupId]) {
+                  let tabGroup = tabGroups[tab.groupId];  
+                  tabGroup.tabs.push(tab);
+                  if (!tabGroup.lastAccessed){
+                    tabGroup.lastAccessed = tabLastAccessed;
+                    tabGroup.lastAccessedTabId = tab.id;
+                  } else {
+                    if (tabLastAccessed > tabGroup.lastAccessed){
+                      tabGroup.lastAccessedTabId = tab.id;
+                      tabGroup.lastAccessed = tabLastAccessed;
+                    }
+                  }
+                } else {
+                  tabGroups[tab.groupId] = {
+                    id: tab.groupId,
+                    lastAccessed: tabLastAccessed,
+                    tabs: [tab]
+                  };
+                }
+              }
+            });
+
+            chrome.tabGroups.query({}, function (groups) {
+              // add last accessed to each group object
+              groups.forEach(function(group){
+                let tabGroup = tabGroups[group.id];
+                if (tabGroup){
+                  group.lastAccessed = tabGroup.lastAccessed;
+                  group.lastAccessedTabId = tabGroup.lastAccessedTabId;
+                }
+              });
+
+              // Sort groups by last accessed
+              this.allItems = groups.sort((a, b) => - tabGroups[a.id].lastAccessed + tabGroups[b.id].lastAccessed);
+              this.items = this.allItems;
+              searcher = new FuzzySearch(this.allItems, ['title'], { sort: true });
+            });
+          });
+        },
     },
     mounted() {
-      chrome.tabGroups.query({},  function (groups) {
-        this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
-        this.items = this.allItems;
-        searcher = new FuzzySearch(this.allItems, ['title'], {sort: true});
-      });
+      this.getSortedTabGroups();
+      // chrome.tabGroups.query({}, function (groups) {
+      //   this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
+      //   this.items = this.allItems;
+      //   searcher = new FuzzySearch(this.allItems, ['title'], { sort: true });
+      // });
 
       var that = this;
       this.$refs.autoCompleteElement.onEscapeKey = function(){
