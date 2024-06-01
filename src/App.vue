@@ -56,6 +56,7 @@ export default {
             selectedValue: '',
             items: [],
             allItems: [],
+            localTabGroups: {},
             placeholderValue: CONST.search_placeholder,
             mode: "search"
         };
@@ -184,7 +185,7 @@ export default {
         if (result.tabGroups){
           console.log('TabGroups retrieved from storage');
           console.log(result.tabGroups);
-          // double check that all tabGroups exist in storage, if not add them to this list
+          this.localTabGroups = result.tabGroups;
         }
       });
     },
