@@ -35,5 +35,5 @@
     }
   },
   "host_permissions": [],
-  "permissions": ["tabGroups"]
+  "permissions": ["tabGroups", "storage"]
 }

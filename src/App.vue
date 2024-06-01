@@ -179,6 +179,37 @@ export default {
           });
         },
     },
+    getStoredTabGroups() {
+      chrome.storage.local.get(['tabGroups'], function(result) {
+        if (result.tabGroups){
+          console.log('TabGroups retrieved from storage');
+          console.log(result.tabGroups);
+          // double check that all tabGroups exist in storage, if not add them to this list
+        }
+      });
+    },
+    setStoredTabGroups(tabGroups) {
+      // TODO: Listen to tab and tabGroup events and update the tabGroups
+      // Listen for create, delete, view, and update events
+      chrome.storage.local.set({tabGroups: tabGroups}, function() {
+        console.log('TabGroups stored in storage');
+        console.log(tabGroups);
+      });
+    },
+    sortTabGroups(tabGroups) {
+      // TODO: sort by last accessed or update sort order
+      return tabGroups.sort((a, b) => a.title.localeCompare(b.title));
+    },
+    onTabEvent(event) {
+      // new tabGroup is created
+      // tabGroup is deleted
+      // tabGroup renamed (this could mean deleted and recreated)
+      // tab is added to tab group
+      // tab is removed from tab group
+      // tab is moved from one group to another
+      // Tab is viewed
+      // Tabgroup is viewed (this could mean tab is viewed in that group)
+    },
     mounted() {
       this.getSortedTabGroups();
       // chrome.tabGroups.query({}, function (groups) {
