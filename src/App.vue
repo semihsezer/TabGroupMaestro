@@ -37,6 +37,7 @@ function focusToTab(windowId, tabId, callback) {
     chrome.tabs.update(tabId, {active: false }, function() {
       chrome.tabs.update(tabId, {active: true }, function() {
         chrome.windows.update(windowId, { focused: true });
+        window.close();
         if (callback){
           callback();
         }
@@ -44,6 +45,7 @@ function focusToTab(windowId, tabId, callback) {
     });
   } else {
     chrome.windows.update(windowId, { focused: true });
+    window.close();
     if (callback) {
       callback();
     }
@@ -67,11 +69,11 @@ export default {
             const queryLower = query.toLowerCase();
 
             if (queryLower == ""){
-              this.items = allItems;
-              return;
+                this.items = this.allItems;
+                return;
             }
 
-            this.items = allItems.filter(function(item) {
+            this.items = this.allItems.filter(function(item) {
               const itemLower = item.title.toLowerCase();
               return itemLower.startsWith(queryLower) || itemLower.includes(queryLower);
             });
@@ -93,7 +95,7 @@ export default {
         },
         onClear(event){
           setTimeout(() => {
-            this.items = allItems;
+            this.items = this.allItems;
             this.$refs.autoCompleteElement.show();
           });
         },
@@ -128,16 +130,40 @@ export default {
               });
             }
           } else {
-            var windowId = this.selectedValue.windowId;
-            var tabId = this.selectedValue.lastAccessedTabId;
+            const windowId = this.selectedValue.windowId;
+            const tabId = this.selectedValue.lastAccessedTabId;
+            const groupId = this.selectedValue.id;
+            this.updateLocalLastAccessed(groupId, tabId);
             focusToTab(windowId, tabId);
           }
         },
-        getSortedTabGroups() {
-          chrome.tabs.query({}, function (tabs) {
-            let tabGroups = {}; // tabGroupId: {id: id, lastAccessed: ts, tabs: []}
+        getLocalTabGroups(callback) {
+          chrome.storage.local.get("tabGroups", function (data) {
+            const tabGroups = data.tabGroups || {};
+            callback(tabGroups);
+          });
+        },
+        updateLocalLastAccessed(groupId, tabId) {
+          this.getLocalTabGroups(function (tabGroups) {
+            if (tabGroups[groupId]) {
+              tabGroups[groupId].lastAccessed = Date.now();
+              tabGroups[groupId].lastAccessedTabId = tabId;
+            } else {
+              tabGroups[groupId] = {
+                id: groupId,
+                lastAccessed: Date.now(),
+                lastAccessedTabId: tabId,
+              };
+            }
+            
+            chrome.storage.local.set({ tabGroups: tabGroups });
+            });
+        },
+        getSortedTabGroups(){
+          chrome.tabs.query({}, (tabs) => {
+            let tabGroups = {}; // tabGroupId: {id: id, lastAccessed: ts, lastAccessedTabId: tabId, tabs: []}
             // Group tabs by tab group and construct lastAccessed
-            tabs.forEach(function (tab) {
+            tabs.forEach((tab) => {
               if (tab.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
                 let tabLastAccessed = tab.lastAccessed ? tab.lastAccessed : -1;
                 if (tabGroups[tab.groupId]) {
@@ -156,68 +182,56 @@ export default {
                   tabGroups[tab.groupId] = {
                     id: tab.groupId,
                     lastAccessed: tabLastAccessed,
+                    lastAccessedTabId: tab.id,
                     tabs: [tab]
                   };
                 }
               }
             });
 
-            chrome.tabGroups.query({}, function (groups) {
-              // add last accessed to each group object
-              groups.forEach(function(group){
+            chrome.tabGroups.query({}, (groups) => {
+              groups.forEach((group) => {
                 let tabGroup = tabGroups[group.id];
-                if (tabGroup){
+                if (tabGroup) {
                   group.lastAccessed = tabGroup.lastAccessed;
                   group.lastAccessedTabId = tabGroup.lastAccessedTabId;
                 }
               });
 
-              // Sort groups by last accessed
-              this.allItems = groups.sort((a, b) => - tabGroups[a.id].lastAccessed + tabGroups[b.id].lastAccessed);
-              this.items = this.allItems;
-              searcher = new FuzzySearch(this.allItems, ['title'], { sort: true });
+              // update values with tab access stored in local storage
+              this.getLocalTabGroups((localTabGroups) => {
+                for (let groupId in localTabGroups) {
+                  if (tabGroups[groupId]) {
+                    let localLastAccessed = localTabGroups[groupId].lastAccessed;
+                    if (localLastAccessed > tabGroups[groupId].lastAccessed) {
+                      tabGroups[groupId].lastAccessed = localLastAccessed;
+                      tabGroups[groupId].lastAccessedTabId = localTabGroups[groupId].lastAccessedTabId;
+                    }
+                  }
+                }
+
+                // remove current tab group
+                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                  let currentTab = tabs[0];
+                  let currentGroupId = currentTab.groupId;
+                  // find index of currentTab in groups
+                  let index = groups.findIndex((group) => group.id == currentGroupId);
+                  if (index > -1) {
+                    groups.splice(index, 1);
+                  }
+
+                  // Sort groups by last accessed
+                  this.allItems = groups.sort((a, b) => - tabGroups[a.id].lastAccessed + tabGroups[b.id].lastAccessed);
+                  this.items = this.allItems;
+                  searcher = new FuzzySearch(this.allItems, ['title'], { sort: true });
+                });
+              });
             });
-          });
-        },
-    },
-    getStoredTabGroups() {
-      chrome.storage.local.get(['tabGroups'], function(result) {
-        if (result.tabGroups){
-          console.log('TabGroups retrieved from storage');
-          console.log(result.tabGroups);
-          this.localTabGroups = result.tabGroups;
-        }
-      });
-    },
-    setStoredTabGroups(tabGroups) {
-      // TODO: Listen to tab and tabGroup events and update the tabGroups
-      // Listen for create, delete, view, and update events
-      chrome.storage.local.set({tabGroups: tabGroups}, function() {
-        console.log('TabGroups stored in storage');
-        console.log(tabGroups);
-      });
-    },
-    sortTabGroups(tabGroups) {
-      // TODO: sort by last accessed or update sort order
-      return tabGroups.sort((a, b) => a.title.localeCompare(b.title));
-    },
-    onTabEvent(event) {
-      // new tabGroup is created
-      // tabGroup is deleted
-      // tabGroup renamed (this could mean deleted and recreated)
-      // tab is added to tab group
-      // tab is removed from tab group
-      // tab is moved from one group to another
-      // Tab is viewed
-      // Tabgroup is viewed (this could mean tab is viewed in that group)
+        });
+      }
     },
     mounted() {
       this.getSortedTabGroups();
-      // chrome.tabGroups.query({}, function (groups) {
-      //   this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
-      //   this.items = this.allItems;
-      //   searcher = new FuzzySearch(this.allItems, ['title'], { sort: true });
-      // });
 
       var that = this;
       this.$refs.autoCompleteElement.onEscapeKey = function(){
@@ -228,12 +242,12 @@ export default {
           if (that.items && that.items.length > 0 && that.items[0].type == "new_group"){
             that.items.shift();
           }
-          that.items = allItems;
+          that.items = this.allItems;
           event.preventDefault();
         } else {
           if (that.selectedValue){
             that.selectedValue = "";
-            that.items = allItems;
+            that.items = this.allItems;
             event.preventDefault();
           } else {
             this.$refs.focusInput.blur();
