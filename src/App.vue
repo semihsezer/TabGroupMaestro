@@ -1,25 +1,39 @@
-<script setup>
-</script>
-
 <template>
   <header>
   </header>
 
   <main>
     <div class="card flex justify-content-center">
-        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" @clear="onClear" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" inputClass="autofocusInput"/>
+      <input
+        ref="searchInput"
+        v-model="query"
+        type="text"
+        class="p-inputtext p-component autofocusInput"
+        :placeholder="placeholderValue"
+        autocomplete="off"
+        @input="onInput"
+        @keydown.escape="onEscapeKey"
+      />
+      <div v-if="items.length" class="autofocusPanel p-autocomplete-panel p-component">
+        <ul class="p-autocomplete-items">
+          <li
+            v-for="item in items"
+            :key="item.id"
+            class="p-autocomplete-item"
+            @click="onItemSelect(item)"
+          >
+            {{ item.title }}
+          </li>
+        </ul>
+      </div>
     </div>
   </main>
 </template>
 
 <script>
-
-import { ref } from "vue";
 import FuzzySearch from 'fuzzy-search';
 
 var searcher = null;
-
-const autoCompleteElement = ref();
 
 const MODES = {
   search: "groupSearch",
@@ -46,6 +60,7 @@ function focusToTab(windowId, tabId, callback) {
 export default {
     data() {
         return {
+            query: '',
             selectedValue: '',
             items: [],
             allItems: [],
@@ -54,16 +69,43 @@ export default {
         };
     },
     methods: {
+        onInput() {
+            this.search({ query: this.query });
+        },
+        onItemSelect(item) {
+            this.selectedValue = item;
+            this.handleUpdate();
+        },
+        onEscapeKey(event) {
+          if (this.mode == MODES.group){
+            this.selectedValue = "";
+            this.mode = MODES.search;
+            this.placeholderValue = CONST.search_placeholder;
+            if (this.items && this.items.length > 0 && this.items[0].type == "new_group"){
+              this.items.shift();
+            }
+            this.items = this.allItems;
+            event.preventDefault();
+          } else {
+            if (this.selectedValue){
+              this.selectedValue = "";
+              this.items = this.allItems;
+              event.preventDefault();
+            } else {
+              this.$refs.searchInput.blur();
+            }
+          }
+        },
         search(event) {
             const query = event.query;
             const queryLower = query.toLowerCase();
 
             if (queryLower == ""){
-              this.items = allItems;
+              this.items = this.allItems;
               return;
             }
 
-            this.items = allItems.filter(function(item) {
+            this.items = this.allItems.filter(function(item) {
               const itemLower = item.title.toLowerCase();
               return itemLower.startsWith(queryLower) || itemLower.includes(queryLower);
             });
@@ -83,14 +125,7 @@ export default {
               }
             };
         },
-        onClear(event){
-          setTimeout(() => {
-            this.items = allItems;
-            this.$refs.autoCompleteElement.show();
-          });
-        },
         handleUpdate() {
-          var that = this;
           if (this.mode == MODES.group){
             // new group
             if (this.selectedValue.type && this.selectedValue.type == "new_group"){
@@ -120,41 +155,18 @@ export default {
               });
             }
           } else {
-            var windowId = this.selectedValue.windowId;
-            focusToTab(windowId, null);
+            focusToTab(this.selectedValue.windowId, null);
           }
         }
     },
     mounted() {
-      chrome.tabGroups.query({},  function (groups) {
+      chrome.tabGroups.query({}, (groups) => {
         this.allItems = groups.sort((a, b) => a.title.localeCompare(b.title));
         this.items = this.allItems;
         searcher = new FuzzySearch(this.allItems, ['title'], {sort: true});
-      });
-
-      var that = this;
-      this.$refs.autoCompleteElement.onEscapeKey = function(){
-        if (that.mode == MODES.group){
-          that.selectedValue = "";
-          that.mode = MODES.search;
-          that.placeholderValue = CONST.search_placeholder;
-          if (that.items && that.items.length > 0 && that.items[0].type == "new_group"){
-            that.items.shift();
-          }
-          that.items = allItems;
-          event.preventDefault();
-        } else {
-          if (that.selectedValue){
-            that.selectedValue = "";
-            that.items = allItems;
-            event.preventDefault();
-          } else {
-            this.$refs.focusInput.blur();
-          }
-        }
-      }
-      this.$nextTick(() => {
-        this.$refs.autoCompleteElement.$refs.focusInput.focus();
+        this.$nextTick(() => {
+          this.$refs.searchInput.focus();
+        });
       });
 
       chrome.commands.onCommand.addListener((command) => {
@@ -181,4 +193,3 @@ export default {
     min-height: 100vh;
   }
 </style>
-
