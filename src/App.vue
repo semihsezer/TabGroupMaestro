@@ -18,7 +18,7 @@
         <ul class="p-autocomplete-items">
           <li
             v-for="item in items"
-            :key="item.id"
+            :key="item.id ?? item.title"
             class="p-autocomplete-item"
             @click="onItemSelect(item)"
           >
@@ -79,6 +79,7 @@ export default {
         onEscapeKey(event) {
           if (this.mode == MODES.group){
             this.selectedValue = "";
+            this.query = "";
             this.mode = MODES.search;
             this.placeholderValue = CONST.search_placeholder;
             if (this.items && this.items.length > 0 && this.items[0].type == "new_group"){
@@ -87,8 +88,9 @@ export default {
             this.items = this.allItems;
             event.preventDefault();
           } else {
-            if (this.selectedValue){
+            if (this.selectedValue || this.query){
               this.selectedValue = "";
+              this.query = "";
               this.items = this.allItems;
               event.preventDefault();
             } else {
