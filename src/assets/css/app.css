@@ -1,15 +1,29 @@
 body {
-  font-family: var('--font-family');
-  color: var('--text-color');
-  width: 15rem;
-  height: 50rem;
-}
-
-.autofocusPanel {
-  min-height: 90%;
-  width: 15rem;
+  font-family: var(--font-family, system-ui, -apple-system, Segoe UI, Roboto, sans-serif);
+  color: var(--text-color, #1e293b);
+  /* Fixed size: a Chrome popup auto-sizes to its content, and a resize while the
+     AutoComplete overlay is open would otherwise close it. Pin the dimensions
+     and hide overflow so opening the dropdown never resizes the popup. */
+  width: 20rem;
+  height: 34rem;
+  margin: 0;
+  padding: 0.25rem;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .autofocusInput {
-  width: 15rem;
+  width: 19.5rem;
+}
+
+.autofocusPanel {
+  width: 19.5rem;
+}
+
+/* Give the suggestions list a fixed height so it fills the popup - a short
+   list leaves no dead space below, a long one scrolls within this height. */
+.autofocusPanel .p-autocomplete-items-wrapper {
+  height: 30.5rem;
+  max-height: 30.5rem !important;
+  overflow-y: auto;
 }

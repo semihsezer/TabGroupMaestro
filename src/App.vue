@@ -7,7 +7,7 @@
 
   <main>
     <div class="card flex justify-content-center">
-        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" @clear="onClear" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" inputClass="autofocusInput"/>
+        <AutoComplete id="autoComplete" ref="autoCompleteElement" v-model="selectedValue" :suggestions="items" optionLabel="title" @complete="search" @item-select="handleUpdate" @clear="onClear" appendTo="self" scrollHeight="30.5rem" :placeholder="placeholderValue" completeOnFocus="true" delay="100" panelClass="autofocusPanel" inputClass="autofocusInput"/>
     </div>
   </main>
 </template>
@@ -69,7 +69,10 @@ export default {
             const queryLower = query.toLowerCase();
 
             if (queryLower == ""){
-                this.items = this.allItems;
+                // Fresh copy each call: re-assigning the same array reference
+                // leaves PrimeVue's AutoComplete stuck with searching=true and
+                // the suggestions overlay never opens.
+                this.items = [...this.allItems];
                 return;
             }
 
@@ -95,7 +98,7 @@ export default {
         },
         onClear(event){
           setTimeout(() => {
-            this.items = this.allItems;
+            this.items = [...this.allItems];
             this.$refs.autoCompleteElement.show();
           });
         },
@@ -210,19 +213,23 @@ export default {
                   }
                 }
 
-                // remove current tab group
+                // remove current tab group - the user is already in it
                 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                   let currentTab = tabs[0];
-                  let currentGroupId = currentTab.groupId;
+                  let currentGroupId = currentTab ? currentTab.groupId : chrome.tabGroups.TAB_GROUP_ID_NONE;
                   // find index of currentTab in groups
                   let index = groups.findIndex((group) => group.id == currentGroupId);
                   if (index > -1) {
                     groups.splice(index, 1);
                   }
 
-                  // Sort groups by last accessed
-                  this.allItems = groups.sort((a, b) => - tabGroups[a.id].lastAccessed + tabGroups[b.id].lastAccessed);
-                  this.items = this.allItems;
+                  // Sort groups by last accessed, most recent first
+                  this.allItems = groups.sort((a, b) => {
+                    const la = tabGroups[a.id] ? tabGroups[a.id].lastAccessed : -1;
+                    const lb = tabGroups[b.id] ? tabGroups[b.id].lastAccessed : -1;
+                    return lb - la;
+                  });
+                  this.items = [...this.allItems];
                   searcher = new FuzzySearch(this.allItems, ['title'], { sort: true });
                 });
               });
@@ -234,6 +241,12 @@ export default {
       this.getSortedTabGroups();
 
       var that = this;
+
+      // Chrome 151+ extension popups emit `resize` events even at a fixed size.
+      // PrimeVue's AutoComplete calls hide() on every one, so the suggestions
+      // overlay could never stay open in the popup. Neutralise that listener.
+      this.$refs.autoCompleteElement.bindResizeListener = function () {};
+
       this.$refs.autoCompleteElement.onEscapeKey = function(){
         if (that.mode == MODES.group){
           that.selectedValue = "";
@@ -242,12 +255,12 @@ export default {
           if (that.items && that.items.length > 0 && that.items[0].type == "new_group"){
             that.items.shift();
           }
-          that.items = this.allItems;
+          that.items = [...that.allItems];
           event.preventDefault();
         } else {
           if (that.selectedValue){
             that.selectedValue = "";
-            that.items = this.allItems;
+            that.items = [...that.allItems];
             event.preventDefault();
           } else {
             this.$refs.focusInput.blur();
