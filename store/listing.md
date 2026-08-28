@@ -26,6 +26,9 @@ https://medium.com/@semih.sezer/how-i-organize-my-chrome-tabs-in-2024-for-focus-
 More about Chrome's native Tab Groups: https://blog.google/products/chrome/manage-tabs-with-google-chrome/
 
 Release History:
+1.2.1: 28th August 2026
+- Fix blank popup on Chrome 151+ — the tab-group list no longer disappears on open
+
 1.2.0: 14th August 2024
 - Show tab groups in reverse accessed order, to keep the latest one at the top.
 - Do not show current tab group in the dropdown
